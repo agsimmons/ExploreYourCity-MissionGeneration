@@ -14,7 +14,7 @@ MISSION_MODEL = 'api.mission'
 OBJECTIVE_MODEL = 'api.objective'
 
 NUM_OBJECTIVES_MIN = 1
-NUM_OBJECTIVES_MAX = 10
+NUM_OBJECTIVES_MAX = 7
 
 OBJECTIVE_RADIUS = 3000
 
@@ -22,8 +22,8 @@ STARTING_MISSION_ID = 1
 STARTING_OBJECTIVE_ID = 1
 
 
-OUTPUT_FILE_MISSIONS = 'missions.json'
-OUTPUT_FILE_OBJECTIVES = 'objectives.json'
+OUTPUT_FILE_MISSIONS = 'Missions.json'
+OUTPUT_FILE_OBJECTIVES = 'Objectives.json'
 
 
 # https://jordinl.com/posts/2019-02-15-how-to-generate-random-geocoordinates-within-given-radius
@@ -56,24 +56,29 @@ def _generate_objective(lat, lon, search_term):
     location_lat = search_choice['geometry']['location']['lat']
     location_lon = search_choice['geometry']['location']['lng']
 
-    objective = {gmaps_id: {
-        'name': name,
-        'formatted_address': formatted_address,
-        'latitude': location_lat,
-        'longitude': location_lon
+    objective = {
+        gmaps_id: {
+            'name': name,
+            'formatted_address': formatted_address,
+            'latitude': location_lat,
+            'longitude': location_lon
     }}
 
     return objective
 
 
 def _generate_mission(lat, lon, radius):
+
+    # Pick a random category and number of objectives
     category = random.choice(categories)
     num_objectives = random.randrange(NUM_OBJECTIVES_MIN, NUM_OBJECTIVES_MAX + 1)
     print(f'DEBUG: Category: {category["name"]}, {num_objectives} objectives')
 
+    # Get random coordinate within radius
     gen_lat, gen_long = _get_random_coordinate_within_radius(lat, lon, radius)
-    print(f'DEBUG: Gen coodinates: ({gen_lat}, {gen_long})')
+    print(f'DEBUG: Gen coordinates: ({gen_lat}, {gen_long})')
 
+    # Generate unique set of objectives
     objectives = []
     while len(objectives) < num_objectives:
         search_term = random.choice(category['types'])
@@ -104,8 +109,6 @@ def _generate_mission(lat, lon, radius):
     return mission
 
 
-
-
 def main():
     print('========== ExploreYourCity Mission Generator ==========')
 
@@ -119,11 +122,25 @@ def main():
 
     count = int(input('How many missions to generate?: '))
 
+    missions = []
     for _ in range(count):
         mission = _generate_mission(latitude, longitude, radius)
-        print(json.dumps(mission, ensure_ascii=False, indent=4))
-        print()
+        missions.append(mission)
 
+    mission_id = STARTING_MISSION_ID
+    objective_id = STARTING_OBJECTIVE_ID
+    for mission in missions:
+        mission_output = {'model': MISSION_MODEL,
+                          'pk': mission_id,
+                          'fields': {
+                              'latitude': mission['latitude'],
+                              'longitude': mission['longitude']
+                          }}
+
+        mission_id += 1
+
+        for objective in mission['objectives']:
+            objective_data = {}
 
 
 if __name__ == '__main__':
